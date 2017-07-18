@@ -1,6 +1,6 @@
 [![Documentation](https://godoc.org/github.com/JReyLBC/netconf?status.svg)](http://godoc.org/github.com/JReyLBC/netconf)
 
-I have a lot of documentation to do here, but at least there's a somewhat decent GoDoc, and this example shoud help too.
+I have a lot of documentation to do here, but at least there's a somewhat decent GoDoc, and this example should help too.
 
 ```go
 package main
