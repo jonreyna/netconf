@@ -231,7 +231,7 @@ func (et *ErrorTag) UnmarshalText(text []byte) error {
 }
 
 // String satisfies the Stringer interface.
-func (et *ErrorTag) String() string {
+func (et ErrorTag) String() string {
 	return et.Tag()
 }
 
