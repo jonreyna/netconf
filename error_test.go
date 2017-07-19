@@ -1,6 +1,7 @@
 package netconf
 
 import (
+	"reflect"
 	"sort"
 	"testing"
 )
@@ -22,7 +23,7 @@ func TestErrorSeverityStringArray_IsSorted(t *testing.T) {
 	if isSorted := sort.StringsAreSorted(errorSeverityStringArray[:]); !isSorted {
 		sortedStrs := errorSeverityStringArray
 		sort.Strings(sortedStrs[:])
-		t.Errorf("errorSeverityStringArray is NOT sorted!\nwant:\t%q\ngot:\t%q",
+		t.Errorf("erroSeverityStringArray is NOT sorted!\nwant:\t%q\ngot:\t%q",
 			sortedStrs, errorSeverityStringArray[:])
 	} else {
 		t.Log("errorSeverityStringArray is sorted")
@@ -75,5 +76,218 @@ func TestError_Unmarshal(t *testing.T) {
 		t.Errorf("unexpected error path:\nwant:\t%q\ngot:\t%q",
 			want, reply1.Error[0].Info.BadElement)
 	}
+}
 
+func TestErrorSeverity_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		ErrorSeverityText []byte
+		WantErrorSeverity ErrorSeverity
+		WantError         error
+	}{
+		{
+			ErrorSeverityText: []byte(""),
+			WantErrorSeverity: ErrorSeverityZero,
+		},
+		{
+			ErrorSeverityText: []byte("error"),
+			WantErrorSeverity: ErrorSeverityError,
+		},
+		{
+			ErrorSeverityText: []byte("unknown"),
+			WantErrorSeverity: ErrorSeverityUnknown,
+		},
+		{
+			ErrorSeverityText: []byte("warning"),
+			WantErrorSeverity: ErrorSeverityWarning,
+		},
+		{
+			ErrorSeverityText: []byte("    unknown"),
+			WantErrorSeverity: ErrorSeverityUnknown,
+		},
+		{
+			ErrorSeverityText: []byte("warning      "),
+			WantErrorSeverity: ErrorSeverityWarning,
+		},
+		{
+			ErrorSeverityText: []byte(" error      "),
+			WantErrorSeverity: ErrorSeverityError,
+		},
+		{
+			ErrorSeverityText: []byte("sadf d error      "),
+			WantErrorSeverity: ErrorSeverityUnknown,
+			WantError:         &UnmarshalTextError{Unknown: "ErrorSeverity", Parsing: "sadf d error      "},
+		},
+		{
+			ErrorSeverityText: []byte("errora"),
+			WantErrorSeverity: ErrorSeverityUnknown,
+			WantError:         &UnmarshalTextError{Unknown: "ErrorSeverity", Parsing: "errora"},
+		},
+	}
+
+	for i, test := range tests {
+		var es ErrorSeverity
+		if err := es.UnmarshalText(test.ErrorSeverityText); err != nil {
+			if !reflect.DeepEqual(err, test.WantError) {
+				t.Errorf("unexpected error returned from UnmarshalText on test %d\nwant:\t%v\ngot:\t%v",
+					i, test.WantError, err)
+			}
+		} else if es != test.WantErrorSeverity {
+			t.Errorf("unexpected ErrorSeverity returned from UnmarshalText on test %d\nwant:\t%q\ngot:\t%q",
+				i, test.WantErrorSeverity, es)
+		}
+	}
+}
+
+func TestErrorType_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		ErrorTypeText []byte
+		WantErrorType ErrorType
+		WantError     error
+	}{
+		{
+			ErrorTypeText: []byte(""),
+			WantErrorType: ErrorTypeZero,
+		},
+		{
+			ErrorTypeText: []byte("application"),
+			WantErrorType: ErrorTypeApplication,
+		},
+		{
+			ErrorTypeText: []byte("protocol"),
+			WantErrorType: ErrorTypeProtocol,
+		},
+		{
+			ErrorTypeText: []byte("rpc"),
+			WantErrorType: ErrorTypeRPC,
+		},
+		{
+			ErrorTypeText: []byte("transport"),
+			WantErrorType: ErrorTypeTransport,
+		},
+		{
+			ErrorTypeText: []byte("unknown"),
+			WantErrorType: ErrorTypeUnknown,
+		},
+		{
+			ErrorTypeText: []byte("   "),
+			WantErrorType: ErrorTypeZero,
+		},
+		{
+			ErrorTypeText: []byte(" rpc  "),
+			WantErrorType: ErrorTypeRPC,
+		},
+		{
+			ErrorTypeText: []byte("rpc  "),
+			WantErrorType: ErrorTypeRPC,
+		},
+		{
+			ErrorTypeText: []byte("      transport"),
+			WantErrorType: ErrorTypeTransport,
+		},
+		{
+			ErrorTypeText: []byte("stransport"),
+			WantErrorType: ErrorTypeUnknown,
+			WantError:     &UnmarshalTextError{Unknown: "ErrorType", Parsing: "stransport"},
+		},
+		{
+			ErrorTypeText: []byte("  rpcc"),
+			WantErrorType: ErrorTypeUnknown,
+			WantError:     &UnmarshalTextError{Unknown: "ErrorType", Parsing: "  rpcc"},
+		},
+		{
+			ErrorTypeText: []byte("unknown  "),
+			WantErrorType: ErrorTypeUnknown,
+		},
+	}
+
+	for i, test := range tests {
+		var et ErrorType
+		if err := et.UnmarshalText(test.ErrorTypeText); err != nil {
+			if !reflect.DeepEqual(err, test.WantError) {
+				t.Errorf("unexpected error returned from UnmarshalText on test %d\nwant:\t%v\ngot:\t%v",
+					i, test.WantError, err)
+			}
+		} else if et != test.WantErrorType {
+			t.Errorf("unexpected ErrorType returned from UnmarshalText on test %d\nwant:\t%q\ngot:\t%q",
+				i, test.WantErrorType, et)
+		}
+	}
+}
+
+func TestErrorTag_UnmarshalText(t *testing.T) {
+
+	tests := []struct {
+		ErrorTagText []byte
+		WantErrorTag ErrorTag
+		WantError    error
+	}{
+		{
+			ErrorTagText: []byte(""),
+			WantErrorTag: ErrorTagZero,
+		},
+		{
+			ErrorTagText: []byte("bad-attribute"),
+			WantErrorTag: ErrorTagBadAttribute,
+		},
+		{
+			ErrorTagText: []byte("lock-denied"),
+			WantErrorTag: ErrorTagLockDenied,
+		},
+		{
+			ErrorTagText: []byte("operation-failed"),
+			WantErrorTag: ErrorTagOpFailed,
+		},
+		{
+			ErrorTagText: []byte("resource-denied"),
+			WantErrorTag: ErrorTagResourceDenied,
+		},
+		{
+			ErrorTagText: []byte("unknown"),
+			WantErrorTag: ErrorTagUnknown,
+		},
+		{
+			ErrorTagText: []byte("   "),
+			WantErrorTag: ErrorTagZero,
+		},
+		{
+			ErrorTagText: []byte("  too-big"),
+			WantErrorTag: ErrorTagTooBig,
+		},
+		{
+			ErrorTagText: []byte("malformed-message     "),
+			WantErrorTag: ErrorTagMalformedMessage,
+		},
+		{
+			ErrorTagText: []byte("    in-use      "),
+			WantErrorTag: ErrorTagInUse,
+		},
+		{
+			ErrorTagText: []byte("ƢƦƴǼ"),
+			WantErrorTag: ErrorTagUnknown,
+			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: "ƢƦƴǼ"},
+		},
+		{
+			ErrorTagText: []byte("    0xDEADBEEFCAFE"),
+			WantErrorTag: ErrorTagUnknown,
+			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: "    0xDEADBEEFCAFE"},
+		},
+		{
+			ErrorTagText: []byte(" i n - u s e "),
+			WantErrorTag: ErrorTagUnknown,
+			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: " i n - u s e "},
+		},
+	}
+
+	for i, test := range tests {
+		var et ErrorTag
+		if err := et.UnmarshalText(test.ErrorTagText); err != nil {
+			if !reflect.DeepEqual(err, test.WantError) {
+				t.Errorf("unexpected error returned from UnmarshalText on test %d\nwant:\t%v\ngot:\t%v",
+					i, test.WantError, err)
+			}
+		} else if et != test.WantErrorTag {
+			t.Errorf("unexpected ErrorTag returned from UnmarshalText on test %d\nwant:\t%q\ngot:\t%q",
+				i, test.WantErrorTag, et)
+		}
+	}
 }
