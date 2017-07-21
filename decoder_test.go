@@ -322,7 +322,7 @@ func TestReply_UnmarshalOk(t *testing.T) {
 	var okReplyObj1 Reply
 	if err := Unmarshal(okReplyBytes1, &okReplyObj1); err != nil {
 		t.Error(err)
-	} else if (okReplyObj1.Ok != nil) != true {
+	} else if okReplyObj1.Ok == nil {
 		t.Errorf("unexpected reply ok value:\nwant:\t%t\ngot:\t%t", true, okReplyObj1.Ok != nil)
 	}
 
@@ -334,7 +334,7 @@ func TestReply_UnmarshalOk(t *testing.T) {
 	var okReplyObj2 Reply
 	if err := Unmarshal(okReplyBytes2, &okReplyObj2); err != nil {
 		t.Error(err)
-	} else if (okReplyObj2.Ok != nil) != false {
+	} else if okReplyObj2.Ok != nil {
 		t.Errorf("unexpected reply ok value:\nwant:\t%t\ngot:\t%t", false, okReplyObj2.Ok != nil)
 	}
 }

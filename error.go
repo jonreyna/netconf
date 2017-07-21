@@ -9,18 +9,18 @@ import (
 // UnmarshalTextError is returned when UnmarshalText fails to parse
 // the text it's given.
 type UnmarshalTextError struct {
-	// Unknown specifies the type that is unknown.
-	Unknown string
-	// Parsing identifies the string that the parse was attempted on.
-	Parsing string
+	// Type is the type of the value that is unknown.
+	Type string
+	// Value is a string representation of the value that unmarshaling was attempted on.
+	Value string
 }
 
 // Error implements the error interface.
 func (ute *UnmarshalTextError) Error() string {
-	return fmt.Sprintf("netconf: unknown %s parsing %q", ute.Unknown, ute.Parsing)
+	return fmt.Sprintf("UnmarshalText: unknown %s parsing %q", ute.Type, ute.Value)
 }
 
-// ErrorSeverity identifies severity of the error as either warning or error.
+// ErrorSeverity identifies severity of the error as either warning, or error.
 type ErrorSeverity uint64
 
 const (
@@ -55,9 +55,9 @@ func (es ErrorSeverity) String() string {
 }
 
 // UnmarshalText sets the ErrorSeverity receiver to the
-// ErrorSeverity represented by the text argument given. If
-// the text argument does not represent a known ErrorSeverity,
-// the ErrorSeverity is set to the ErrorSeverityUnknown constant,
+// constant represented by the text argument given.
+// If the text argument does not represent a known ErrorSeverity,
+// it is set to the ErrorSeverityUnknown constant,
 // and an UnmarshalTextError is returned.
 func (es *ErrorSeverity) UnmarshalText(text []byte) error {
 
@@ -68,7 +68,7 @@ func (es *ErrorSeverity) UnmarshalText(text []byte) error {
 	}
 
 	*es = ErrorSeverityUnknown
-	return &UnmarshalTextError{Unknown: "ErrorSeverity", Parsing: string(text)}
+	return &UnmarshalTextError{Type: "ErrorSeverity", Value: string(text)}
 }
 
 // ErrorInfo contains protocol or data model specific error content.
@@ -122,9 +122,9 @@ func (es ErrorType) String() string {
 	return errorTypeStringArray[ErrorTypeUnknown]
 }
 
-// UnmarshalText sets the ErrorType receiver to the ErrorType
+// UnmarshalText sets the ErrorType receiver to the constant
 // represented by the text argument given. If the text argument
-// does not represent a known ErrorType, the ErrorType is set
+// does not represent a known ErrorType, it is set
 // to the ErrorTypeUnknown constant, and an UnmarshalTextError
 // is returned.
 func (es *ErrorType) UnmarshalText(text []byte) error {
@@ -136,7 +136,7 @@ func (es *ErrorType) UnmarshalText(text []byte) error {
 	}
 
 	*es = ErrorTypeUnknown
-	return &UnmarshalTextError{Unknown: "ErrorType", Parsing: string(text)}
+	return &UnmarshalTextError{Type: "ErrorType", Value: string(text)}
 }
 
 // ErrorTag identifies the error condition.
@@ -257,7 +257,7 @@ func (et ErrorTag) Severity() ErrorSeverity {
 	}
 }
 
-// UnmarshalText sets the ErrorTag receiver to the ErrorTag
+// UnmarshalText sets the ErrorTag receiver to the constant
 // represented by the text argument given. If the text argument
 // does not represent a known ErrorTag, the ErrorTag is set
 // to the ErrorTagUnknown constant, and an UnmarshalTextError
@@ -272,7 +272,7 @@ func (et *ErrorTag) UnmarshalText(text []byte) error {
 	}
 
 	*et = ErrorTagUnknown
-	return &UnmarshalTextError{Unknown: "ErrorTag", Parsing: string(text)}
+	return &UnmarshalTextError{Type: "ErrorTag", Value: string(text)}
 }
 
 // Error encapsulates a NETCONF RPC error.

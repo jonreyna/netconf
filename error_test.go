@@ -115,12 +115,12 @@ func TestErrorSeverity_UnmarshalText(t *testing.T) {
 		{
 			ErrorSeverityText: []byte("sadf d error      "),
 			WantErrorSeverity: ErrorSeverityUnknown,
-			WantError:         &UnmarshalTextError{Unknown: "ErrorSeverity", Parsing: "sadf d error      "},
+			WantError:         &UnmarshalTextError{Type: "ErrorSeverity", Value: "sadf d error      "},
 		},
 		{
 			ErrorSeverityText: []byte("errora"),
 			WantErrorSeverity: ErrorSeverityUnknown,
-			WantError:         &UnmarshalTextError{Unknown: "ErrorSeverity", Parsing: "errora"},
+			WantError:         &UnmarshalTextError{Type: "ErrorSeverity", Value: "errora"},
 		},
 	}
 
@@ -187,12 +187,12 @@ func TestErrorType_UnmarshalText(t *testing.T) {
 		{
 			ErrorTypeText: []byte("stransport"),
 			WantErrorType: ErrorTypeUnknown,
-			WantError:     &UnmarshalTextError{Unknown: "ErrorType", Parsing: "stransport"},
+			WantError:     &UnmarshalTextError{Type: "ErrorType", Value: "stransport"},
 		},
 		{
 			ErrorTypeText: []byte("  rpcc"),
 			WantErrorType: ErrorTypeUnknown,
-			WantError:     &UnmarshalTextError{Unknown: "ErrorType", Parsing: "  rpcc"},
+			WantError:     &UnmarshalTextError{Type: "ErrorType", Value: "  rpcc"},
 		},
 		{
 			ErrorTypeText: []byte("unknown  "),
@@ -264,17 +264,17 @@ func TestErrorTag_UnmarshalText(t *testing.T) {
 		{
 			ErrorTagText: []byte("ƢƦƴǼ"),
 			WantErrorTag: ErrorTagUnknown,
-			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: "ƢƦƴǼ"},
+			WantError:    &UnmarshalTextError{Type: "ErrorTag", Value: "ƢƦƴǼ"},
 		},
 		{
 			ErrorTagText: []byte("    0xDEADBEEFCAFE"),
 			WantErrorTag: ErrorTagUnknown,
-			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: "    0xDEADBEEFCAFE"},
+			WantError:    &UnmarshalTextError{Type: "ErrorTag", Value: "    0xDEADBEEFCAFE"},
 		},
 		{
 			ErrorTagText: []byte(" i n - u s e "),
 			WantErrorTag: ErrorTagUnknown,
-			WantError:    &UnmarshalTextError{Unknown: "ErrorTag", Parsing: " i n - u s e "},
+			WantError:    &UnmarshalTextError{Type: "ErrorTag", Value: " i n - u s e "},
 		},
 	}
 
