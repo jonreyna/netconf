@@ -12,7 +12,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/JReyLBC/netconf"
+	"github.com/sourcemonk/netconf"
 	"golang.org/x/crypto/ssh"
 )
 
