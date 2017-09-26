@@ -17,67 +17,46 @@ import (
 // separator is encountered. This is how ReplyReader is able to satisfy
 // the strict interpretation of the io.Reader interface.
 type ReplyReader struct {
-	session  io.Reader     // attached to stdout of netconf session
-	bytesBuf *bytes.Buffer // scratchpad for reader to make implementing the standard io.Reader easier
-	buf      []byte        // used to read from session before copying to bytes buffer
-	err      error         // once an error is generated, always return it on subsequent calls
+	session io.Reader // attached to stdout of netconf session
+	err     error     // once an error is generated, always return it on subsequent calls
 }
 
 // NewReplyReader assumes the given reader reads from
 // a NETCONF session's stdout, and adapts its behavior to
 // a standard io.Reader, allowing it to work with standard
 // library methods and functions.
+// It is intended to read exactly one RPC reply, however
+// it can be reused after calling the Reset method.
 func NewReplyReader(session io.Reader) *ReplyReader {
 	return &ReplyReader{
-		session:  session,
-		bytesBuf: &bytes.Buffer{},
+		session: session,
 	}
 }
 
-// Read performs line oriented reads (using bufio.Scanner),
-// and discards newlines characters. This may be undesirable
-// if the NETCONF server writes CLI-like output for humans
-// (e.g. in an <output> tag).
-//
-// On the other hand, trimming newlines may be desirable when
-// the NETCONF server writes newlines around values (like integers),
-// because the standard xml.Decoder uses strconv to parse
-// integers, and it returns an error when parsing integers that
-// have surrounding white space.
-//
-// Trimming newlines may be optional in future implementations.
+// Read implements the io.Reader interface by returning io.EOF
+// whenever the standard NETCONF message separator is found in
+// the byte stream.
 func (rr *ReplyReader) Read(p []byte) (n int, err error) {
 
-	// continue to return error to comply with io.Reader interface
 	if rr.err != nil {
-		// if there's more to read, return it
-		if rr.bytesBuf.Len() != 0 {
-			return rr.bytesBuf.Read(p)
-		}
-
 		return 0, rr.err
 	}
 
-	n, rr.err = rr.session.Read(rr.buf)
-	rr.bytesBuf.Write(rr.buf[:n]) // always returns a nil error
+	n, rr.err = rr.session.Read(p)
 
-	bTrim := bytes.TrimRightFunc(rr.bytesBuf.Bytes(), unicode.IsSpace)
+	bTrim := bytes.TrimRightFunc(p[:n], unicode.IsSpace)
 	if bytes.HasSuffix(bTrim, messageSeparatorBytes) {
-		// found the message separator
-		rr.bytesBuf.Truncate(bytes.LastIndex(bTrim, messageSeparatorBytes))
+		n = bytes.LastIndex(bTrim, messageSeparatorBytes)
 		rr.err = io.EOF
-		return rr.bytesBuf.Read(p)
 	}
 
-	// verify buffer is big enough to detect message sep on next read
-	if rr.bytesBuf.Len() < len(messageSeparatorBytes) {
-		// buffer too small guarantee message separator is detected
-		// e.g. contents could be "]]>]]"
-		return 0, nil
-	}
-
-	n, _ = rr.bytesBuf.Read(p) // may return io.EOF prematurely
 	return n, rr.err
+}
+
+// Reset clears the internal error field, allowing
+// this reader to be reused.
+func (rr *ReplyReader) Reset() {
+	rr.err = nil
 }
 
 // WithDeadline decorates the ReplyReader with a DeadlineReader.
