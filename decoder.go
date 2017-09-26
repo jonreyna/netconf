@@ -14,7 +14,7 @@ type Reply struct {
 	XMLName xml.Name    `xml:"rpc-reply"`
 	Attr    []xml.Attr  `xml:",attr"`
 	Ok      *struct{}   `xml:"ok"`
-	Error   []Error     `xml:"rpc-error"`
+	Error   []ReplyError     `xml:"rpc-error"`
 	Data    interface{} `xml:",any"`
 }
 
@@ -52,17 +52,25 @@ func (d *Decoder) DecodeHello(h *HelloMessage) error {
 	return nil
 }
 
-// Decode decodes a single NETCONF RPC reply message, and unmarshals it
-// into the parameter. First, It reads from the underlying io.Reader using
-// xml.Decoder's Decode method under the covers. Then it discards the
-// NETCONF message separator.
+// Decode wraps the interface{} parameter in a Reply object
+// to capture all of the RPC Reply content. It also searches
+// for errors in the Reply, and returns the first ReplyError
+// found.
+// as a standard error interface.
 //
-// Parsing XML as a stream of tokens is still possible using the underlying
-// xml.Decoder. However, SkipSep should be called finished.
+//
+// unmarshals a single NETCONF RPC reply message into
+// the given interface{}.
+//
+// A full RPC Reply can be obtained
+// Parsing XML as a stream of tokens is still possible using
+// the embedded xml.Decoder. However, Done should be called
+// finished to discard the NETCONF message separator.
 func (d *Decoder) Decode(v interface{}) error {
 
 	reply, ok := v.(*Reply)
 	if !ok {
+		// wrap in a standard RPC Reply for proper decoding
 		reply = &Reply{
 			Data: v,
 		}
@@ -70,8 +78,14 @@ func (d *Decoder) Decode(v interface{}) error {
 
 	if err := d.Decoder.Decode(reply); err != nil {
 		return err
-	} else if err = d.SkipSep(); err != nil {
-		return err
+	}
+
+	// TODO: Consider returning here if the caller provided a Reply
+
+	for i, err := range reply.Error {
+		if err.Severity == ErrorSeverityError {
+			return &reply.Error[i]
+		}
 	}
 
 	return nil
