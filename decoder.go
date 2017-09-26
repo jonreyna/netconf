@@ -11,11 +11,11 @@ import (
 // It is useful for wrapping structs that don't
 // decode the outer rpc-reply tags.
 type Reply struct {
-	XMLName xml.Name    `xml:"rpc-reply"`
-	Attr    []xml.Attr  `xml:",attr"`
-	Ok      *struct{}   `xml:"ok"`
-	Error   []ReplyError     `xml:"rpc-error"`
-	Data    interface{} `xml:",any"`
+	XMLName xml.Name     `xml:"rpc-reply"`
+	Attr    []xml.Attr   `xml:",attr"`
+	Ok      *struct{}    `xml:"ok"`
+	Error   []ReplyError `xml:"rpc-error"`
+	Data    interface{}  `xml:",any"`
 }
 
 // Decoder embeds an xml.Decoder, but overrides Decode

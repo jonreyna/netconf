@@ -58,8 +58,8 @@ func TestError_Unmarshal(t *testing.T) {
 `
 
 	var reply1 Reply
-	if err := Unmarshal([]byte(err1), &reply1); err != nil {
-		t.Error(err)
+	if err := Unmarshal([]byte(err1), &reply1); err.Error() != "error unknown-element pbr" {
+		t.Errorf("unexpected error unmarshalling reply: %v", err)
 	} else if reply1.Error[0].Type != ErrorTypeProtocol {
 		t.Errorf("unexpected error type:\nwant:\t%q\ngot:\t%q",
 			ErrorTypeProtocol, reply1.Error[0].Type)

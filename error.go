@@ -263,5 +263,8 @@ type ReplyError struct {
 
 // Error is the implementation of the error interface.
 func (e *ReplyError) Error() string {
-	return e.Message
+	if e.Message != "" {
+		return e.Message
+	}
+	return fmt.Sprintf("%s %s %s", e.Severity, e.Tag, e.Info.BadElement)
 }
