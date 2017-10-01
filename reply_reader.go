@@ -8,14 +8,21 @@ import (
 	"unicode"
 )
 
+// MessageSeparator is a constant defining the standard
+// NETCONF message seaprator. It should be written to the
+// session after writing any method.
+const MessageSeparator = `]]>]]>`
+
 // TODO: add ReplyReader.Reset method
 
 // ReplyReader reads exactly one RPC reply from the session,
 // and discards the message separator. If multiple RPCs need to
-// be read from the session, multiple ReplyReaders will be required.
-// The io.EOF error is returned on every read after the NETCONF message
-// separator is encountered. This is how ReplyReader is able to satisfy
-// the strict interpretation of the io.Reader interface.
+// be read from the session, either multiple ReplyReaders will, or
+// the Reset method needs to be called before reading the next RPC.
+// Otherwise, the io.EOF error is returned on every read after the
+// the NETCONF message separator is encountered. This is how
+// ReplyReader is able to satisfy strict interpretation of the
+// io.Reader interface.
 type ReplyReader struct {
 	session io.Reader // attached to stdout of netconf session
 	err     error     // once an error is generated, always return it on subsequent calls
@@ -25,6 +32,7 @@ type ReplyReader struct {
 // a NETCONF session's stdout, and adapts its behavior to
 // a standard io.Reader, allowing it to work with standard
 // library methods and functions.
+//
 // It is intended to read exactly one RPC reply, however
 // it can be reused after calling the Reset method.
 func NewReplyReader(session io.Reader) *ReplyReader {
