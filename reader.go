@@ -37,8 +37,8 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 		}
 
 		bTrim := bytes.TrimRightFunc(r.buffer.Bytes(), unicode.IsSpace)
-		if bytes.HasSuffix(bTrim, messageSeparatorBytes) {
-			r.buffer.Truncate(bytes.LastIndex(bTrim, messageSeparatorBytes))
+		if bytes.HasSuffix(bTrim, []byte(MessageSeparator)) {
+			r.buffer.Truncate(bytes.LastIndex(bTrim, []byte(MessageSeparator)))
 			r.done = true
 		}
 	}

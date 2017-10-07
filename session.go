@@ -1,6 +1,7 @@
 package netconf
 
 import (
+	"context"
 	"encoding/xml"
 	"io"
 
@@ -12,10 +13,7 @@ const DefaultPort = "830"
 // MessageSeparator is a constant defining the standard
 // NETCONF message seaprator. It should be written to the
 // session after writing any method.
-const MessageSeparator = `]]>]]>
-`
-
-var messageSeparatorBytes = []byte(MessageSeparator)
+const MessageSeparator = `]]>]]>`
 
 // DefaultHelloMessage is this library's default hello sent to the
 // server, when it is not sent manually by the client application.
@@ -27,8 +25,6 @@ const DefaultHelloMessage = `<?xml version="1.0" encoding="UTF-8"?>
 </hello>
 ]]>]]>
 `
-
-var defaultHelloMessageBytes = []byte(DefaultHelloMessage)
 
 // HelloMessage represents a capabilities exchange message.
 type HelloMessage struct {
@@ -49,14 +45,14 @@ func NewSession(sshSession *ssh.Session) (*Session, *HelloMessage, error) {
 
 	err := sshSession.RequestSubsystem("netconf")
 	if err != nil {
-		sshSession.Close()
+		_ = sshSession.Close()
 		return nil, nil, err
 	}
 
 	ncSession := Session{sshSession: sshSession}
 	err = ncSession.initPipes()
 	if err != nil {
-		ncSession.Close()
+		_ = ncSession.Close()
 		return nil, nil, err
 	}
 
@@ -65,11 +61,11 @@ func NewSession(sshSession *ssh.Session) (*Session, *HelloMessage, error) {
 
 	hello, err := ncSession.DecodeHello()
 	if err != nil {
-		ncSession.Close()
+		_ = ncSession.Close()
 		return nil, nil, err
 	}
 
-	_, err = ncSession.writeCloser.Write(defaultHelloMessageBytes)
+	_, err = ncSession.writeCloser.Write([]byte(DefaultHelloMessage))
 
 	return &ncSession, hello, err
 }
@@ -111,13 +107,11 @@ func (s *Session) Close() error {
 		err = s.writeCloser.Close()
 	}
 
-	if s.sshSession != nil {
-		if err != nil {
-			s.sshSession.Close()
-		} else {
-			err = s.sshSession.Close()
-		}
+	if s.sshSession != nil && err == nil {
+		return s.sshSession.Close()
 	}
+
+	_ = s.sshSession.Close()
 
 	return err
 }
@@ -128,21 +122,122 @@ func (s *Session) DecodeHello() (*HelloMessage, error) {
 	return &hello, s.decoder.Decode(&hello)
 }
 
-// func (s *Session) LocalAddr() net.Addr { }
-
-// func (s *Session) Exec(ctx context.Context, method ...interface{}) (*ReplyReader, error) { }
-
-func (s *Session) execOne(method interface{}) error {
-
-	m, ok := method.(*Method)
-	if !ok {
-		m = WrapMethod(method)
-	}
-
-	return s.encoder.Encode(m)
+func (s *Session) ExecOne(ctx context.Context, method, reply interface{}) <-chan error {
+	return s.goEncodDecodeOne(ctx, method, reply)
 }
 
-func (s *Session) writeSep() error {
-	_, err := s.Write(messageSeparatorBytes)
-	return err
+func (s *Session) goEncodDecodeOne(ctx context.Context, method, reply interface{}) <-chan error {
+
+	errChan := make(chan error, 1)
+
+	go func() {
+
+		defer close(errChan)
+
+		select {
+		case err := <-s.goEncodeOne(ctx, method):
+			if err != nil {
+				errChan <- err
+				return
+			}
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+			return
+		}
+
+		select {
+		case err := <-s.goDecodeOne(ctx, method):
+			if err != nil {
+				errChan <- err
+			}
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+		}
+	}()
+
+	return errChan
+}
+
+func (s *Session) goDecodeOne(ctx context.Context, reply interface{}) <-chan error {
+
+	errChan := make(chan error, 1)
+
+	go func() {
+
+		defer close(errChan)
+
+		r, ok := reply.(*Reply)
+		if !ok {
+			r = &Reply{
+				Data: reply,
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+			return
+		default:
+		}
+
+		if err := s.decoder.Decode(r); err != nil {
+			errChan <- err
+			return
+		}
+
+		for i, err := range r.Error {
+			if err.Severity == ErrorSeverityError {
+				errChan <- &r.Error[i]
+				return
+			}
+		}
+	}()
+
+	return errChan
+}
+
+func (s *Session) goEncodeOne(ctx context.Context, method interface{}) <-chan error {
+
+	errChan := make(chan error, 1)
+
+	go func() {
+
+		defer close(errChan)
+
+		m, ok := method.(*Method)
+		if !ok {
+			m = WrapMethod(method)
+		}
+
+		select {
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+			return
+		default:
+		}
+
+		if err := s.encoder.Encode(m); err != nil {
+			errChan <- err
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			errChan <- ctx.Err()
+			return
+		default:
+		}
+
+		if _, err := s.WriteSep(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	return errChan
+}
+
+func (s *Session) WriteSep() (n int, err error) {
+	const sepWithNewLine = `]]>]]>
+`
+	return s.Write([]byte(sepWithNewLine))
 }

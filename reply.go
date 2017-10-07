@@ -8,55 +8,138 @@ import (
 )
 
 const (
-	ErrorSeverityZero    ErrorSeverity = iota // ErrorSeverityZero represents an uninitialized ErrorSeverity value.
-	ErrorSeverityError                        // ErrorSeverityError indicates the severity is on the error level.
-	ErrorSeverityUnknown                      // ErrorSeverityUnknown means the ErrorSeverity could not be identified, and may indicate an internal error.
-	ErrorSeverityWarning                      // ErrorSeverityWarning is not yet utilized, according to RFC 6241.
+	// ErrorSeverityZero represents an uninitialized ErrorSeverity value.
+	ErrorSeverityZero ErrorSeverity = iota
+
+	// ErrorSeverityError indicates the severity is on the error level.
+	ErrorSeverityError
+
+	// ErrorSeverityUnknown means the ErrorSeverity could not be identified,
+	// and may indicate an internal error.
+	ErrorSeverityUnknown
+
+	// ErrorSeverityWarning is not yet utilized, according to RFC 6241.
+	ErrorSeverityWarning
 )
 
 const (
 	// ErrorTypeZero represents an uninitialized ErrorType value.
 	ErrorTypeZero ErrorType = iota
-	// ErrorTypeApplication indicates the error occurred on the Content layer.
+
+	// ErrorTypeApplication indicates the error occurred on the Content
+	// layer.
 	ErrorTypeApplication
-	// ErrorTypeProtocol indicates the error occurred on the Operations layer, which defines a set of base protocol operations invoked as RPC methods.
+
+	// ErrorTypeProtocol indicates the error occurred on the Operations
+	// layer, which defines a set of base protocol operations invoked as
+	// RPC methods.
 	ErrorTypeProtocol
-	// ErrorTypeRPC indicates the error occurred on the Messages layer: the transport-independent framing mechanism for encoding RPCs and notifications.
+
+	// ErrorTypeRPC indicates the error occurred on the Messages layer:
+	// the transport-independent framing mechanism for encoding RPCs
+	// and notifications.
 	ErrorTypeRPC
-	// ErrorTypeTransport indicates the error occurred on the Secure Transport layer, which provides a communication path between the client and server.
+
+	// ErrorTypeTransport indicates the error occurred on the Secure
+	// Transport layer, which provides a communication path between the
+	// client and server.
 	ErrorTypeTransport
+
 	// ErrorTypeUnknown indicates an unexpected condition.
 	ErrorTypeUnknown
 )
 
 const (
-	ErrorTagZero             ErrorTag = iota // ErrorTagZero is an uninitialized ErrorTag value.
-	ErrorTagAccessDenied                     // ErrorTagAccessDenied indicates access was denied because authorization failed.
-	ErrorTagBadAttribute                     // ErrorTagBadAttribute indicates an attribute value is not correct; e.g., wrong type, out of range, pattern mismatch.
-	ErrorTagBadElement                       // ErrorTagBadElement indicates a bad element value was in the RPC. ErrorInfo's BadElement field will contain element's name.
-	ErrorTagDataExists                       // ErrorTagDataExists indicates data could not be created because it already exists.
-	ErrorTagDataMissing                      // ErrorTagDataMissing indicates data could not be deleted because it doesn't exist.
-	ErrorTagInUse                            // ErrorTagInUse indicates the required resource is already in use.
-	ErrorTagInvalidValue                     // ErrorTagInvalidValue indicates the RPC specifies an unacceptable value for one or more parameters.
-	ErrorTagLockDenied                       // ErrorTagLockDenied indicates the requested lock is denied because it is held by another entity.
-	ErrorTagMalformedMessage                 // ErrorTagMalformedMessage indicates a failure to parse the RPC correctly.
-	ErrorTagMissingAttribute                 // ErrorTagMissingAttribute indicates an expected attribute is missing.
-	ErrorTagMissingElement                   // ErrorTagMissingElement indicates an expected element is missing. ErrorInfo's BadElement field will contain the name of the missing element.
-	ErrorTagOpFailed                         // ErrorTagOpFailed indicates failure for some reason not covered by other error conditions.
-	ErrorTagOpNotSupported                   // ErrorTagOpNotSupported indicates RPC is not supported by the implementation.
-	ErrorTagOpPartial                        // ErrorTagOpPartial indicates the RPC failed partially or was aborted, and cleanup was not performed. ErrorInfo's OkElement, ErrElement, and NOPElement identify elements that succeeded, failed, and were aborted respectively.
-	ErrorTagResourceDenied                   // ErrorTagResourceDenied indicates insufficient resources.
-	ErrorTagRollbackFailed                   // ErrorTagRollbackFailed indicates the rollback was not completed.
-	ErrorTagTooBig                           // ErrorTagTooBig indicates the request or response is too large to handle.
-	ErrorTagUnknown                          // ErrorTagUnknown probably indicates an internal error, because the error type could not be identified.
-	ErrorTagUnknownAttribute                 // ErrorTagUnknownAttribute indicates an unexpected attribute is present. ErrorInfo's BadAttribute and BadElement field will contain more detail.
-	ErrorTagUnknownElement                   // ErrorTagUnknownElement indicates an unexpected element. ErrorInfo's BadElement field will contain its name.
-	ErrorTagUnknownNamespace                 // ErrorTagUnknownNamespace indicates an unexpected namespace is present. ErrorInfo's BadElement and BadNamespace fields will contain more detail.
+	// ErrorTagZero is an uninitialized ErrorTag value.
+	ErrorTagZero ErrorTag = iota
+
+	// ErrorTagAccessDenied indicates access was denied because
+	// authorization failed.
+	ErrorTagAccessDenied
+
+	// ErrorTagBadAttribute indicates an attribute value is not
+	// correct; e.g., wrong type, out of range, pattern mismatch.
+	ErrorTagBadAttribute
+
+	// ErrorTagBadElement indicates a bad element value was in
+	// the RPC. ErrorInfo's BadElement field will contain element's name.
+	ErrorTagBadElement
+
+	// ErrorTagDataExists indicates data could not be created because
+	// it already exists.
+	ErrorTagDataExists
+
+	// ErrorTagDataMissing indicates data could not be deleted because
+	// it doesn't exist.
+	ErrorTagDataMissing
+
+	// ErrorTagInUse indicates the required resource is already in use.
+	ErrorTagInUse
+
+	// ErrorTagInvalidValue indicates the RPC specifies an unacceptable
+	// value for one or more parameters.
+	ErrorTagInvalidValue
+
+	// ErrorTagLockDenied indicates the requested lock is denied because
+	// it is held by another entity.
+	ErrorTagLockDenied
+
+	// ErrorTagMalformedMessage indicates a failure to parse the RPC
+	// correctly.
+	ErrorTagMalformedMessage
+
+	// ErrorTagMissingAttribute indicates an expected attribute is missing.
+	ErrorTagMissingAttribute
+
+	// ErrorTagMissingElement indicates an expected element is missing.
+	// ErrorInfo's BadElement field will contain the name of the missing element.
+	ErrorTagMissingElement
+
+	// ErrorTagOpFailed indicates failure for some reason not covered by other
+	// error conditions.
+	ErrorTagOpFailed
+
+	// ErrorTagOpNotSupported indicates RPC is not supported by the
+	// implementation.
+	ErrorTagOpNotSupported
+
+	// ErrorTagOpPartial indicates the RPC failed partially or was aborted,
+	// and cleanup was not performed. ErrorInfo's OkElement, ErrElement,
+	// and NOPElement identify elements that succeeded, failed, and were
+	// aborted respectively.
+	ErrorTagOpPartial
+
+	// ErrorTagResourceDenied indicates insufficient resources.
+	ErrorTagResourceDenied
+
+	// ErrorTagRollbackFailed indicates the rollback was not completed.
+	ErrorTagRollbackFailed
+
+	// ErrorTagTooBig indicates the request or response is too large to
+	// handle.
+	ErrorTagTooBig
+
+	// ErrorTagUnknown probably indicates an internal error, because the
+	// error type could not be identified.
+	ErrorTagUnknown
+
+	// ErrorTagUnknownAttribute indicates an unexpected attribute is
+	// present. ErrorInfo's BadAttribute and BadElement field will contain
+	// more detail.
+	ErrorTagUnknownAttribute
+
+	// ErrorTagUnknownElement indicates an unexpected element. ErrorInfo's
+	// BadElement field will contain its name.
+	ErrorTagUnknownElement
+
+	// ErrorTagUnknownNamespace indicates an unexpected namespace is
+	// present. ErrorInfo's BadElement and BadNamespace fields will contain
+	// more detail.
+	ErrorTagUnknownNamespace
 )
 
-// Reply models the structure of a NETCONF reply.
-// It is useful for wrapping structs that don't
-// decode the outer rpc-reply tags.
+// Reply models the structure of a NETCONF reply. It is useful for wrapping
+// structs that don't decode the outer rpc-reply tags.
 type Reply struct {
 	XMLName xml.Name     `xml:"rpc-reply"`
 	Ok      *struct{}    `xml:"ok"`
@@ -65,7 +148,8 @@ type Reply struct {
 	Error   []ReplyError `xml:"rpc-error"`
 }
 
-// ReplyError encapsulates a NETCONF RPC error, and implements the error interface.
+// ReplyError encapsulates a NETCONF RPC error, and implements the error
+// interface.
 type ReplyError struct {
 	Type     ErrorType     `xml:"error-type"`     // Type is the conceptual layer that the error occurred.
 	Tag      ErrorTag      `xml:"error-tag"`      // Tag identifies the error condition.
@@ -83,8 +167,8 @@ func (e *ReplyError) Error() string {
 	return fmt.Sprintf("%s %s %s", e.Severity, e.Tag, e.Info.BadElement)
 }
 
-// UnmarshalTextError is returned when UnmarshalText fails to parse
-// the text it's given.
+// UnmarshalTextError is returned when UnmarshalText fails to parse the text
+// it's given.
 type UnmarshalTextError struct {
 	Type  string // Type is the unknown value's type.
 	Value string // Value is the what caused the failure.
@@ -98,9 +182,8 @@ func (ute *UnmarshalTextError) Error() string {
 // ErrorSeverity identifies severity of the error as either warning, or error.
 type ErrorSeverity uint
 
-// errorSeverityStringArray contains all error severity
-// levels, and is used to translate ErrorSeverities to
-// and from strings.
+// errorSeverityStringArray contains all error severity levels, and is used to
+// translate ErrorSeverities to and from strings.
 var errorSeverityStringArray = [...]string{
 	ErrorSeverityZero:    "",
 	ErrorSeverityError:   "error",
@@ -108,9 +191,8 @@ var errorSeverityStringArray = [...]string{
 	ErrorSeverityWarning: "warning",
 }
 
-// String returns a string representing the ErrorSeverity.
-// If the ErrorSeverity is not known for some erroneous reason,
-// the String will return "unknown".
+// String returns a string representing the ErrorSeverity. If the ErrorSeverity
+// is not known for some erroneous reason, the String will return "unknown".
 func (es ErrorSeverity) String() string {
 	if int(es) < len(errorSeverityStringArray) {
 		return errorSeverityStringArray[es]
@@ -118,11 +200,10 @@ func (es ErrorSeverity) String() string {
 	return errorSeverityStringArray[ErrorSeverityUnknown]
 }
 
-// UnmarshalText sets the receiver to the constant represented
-// by the text argument given. If the text argument does not
-// represent a known ErrorSeverity, it is set to the
-// ErrorSeverityUnknown constant, and an UnmarshalTextError
-// is returned.
+// UnmarshalText sets the receiver to the constant represented by the text
+// argument given. If the text argument does not represent a known
+// ErrorSeverity, it is set to the ErrorSeverityUnknown constant, and an
+// UnmarshalTextError is returned.
 func (es *ErrorSeverity) UnmarshalText(text []byte) error {
 
 	sText := string(bytes.ToLower(bytes.TrimSpace(text)))
@@ -148,9 +229,8 @@ type ErrorInfo struct {
 // ErrorType defines the conceptual layer that the error occurred in.
 type ErrorType uint64
 
-// errorTypeStringArray contains all error types,
-// and is used to translate ErrorTypes to and from
-// strings.
+// errorTypeStringArray contains all error types, and is used to translate
+// ErrorTypes to and from strings.
 var errorTypeStringArray = [...]string{
 	ErrorTypeZero:        "",
 	ErrorTypeApplication: "application",
@@ -160,9 +240,8 @@ var errorTypeStringArray = [...]string{
 	ErrorTypeUnknown:     "unknown",
 }
 
-// String returns a string representation of the
-// ErrorType. If the ErrorType is unknown, the
-// ErrorTypeUnknown constant is returned.
+// String returns a string representation of the ErrorType. If the ErrorType is
+// unknown, the ErrorTypeUnknown constant is returned.
 func (es ErrorType) String() string {
 	if int(es) < len(errorTypeStringArray) {
 		return errorTypeStringArray[es]
@@ -170,11 +249,10 @@ func (es ErrorType) String() string {
 	return errorTypeStringArray[ErrorTypeUnknown]
 }
 
-// UnmarshalText sets the ErrorType receiver to the constant
-// represented by the text argument given. If the text argument
-// does not represent a known ErrorType, it is set
-// to the ErrorTypeUnknown constant, and an UnmarshalTextError
-// is returned.
+// UnmarshalText sets the ErrorType receiver to the constant represented by the
+// text argument given. If the text argument does not represent a known
+// ErrorType, it is set to the ErrorTypeUnknown constant, and an
+// UnmarshalTextError is returned.
 func (es *ErrorType) UnmarshalText(text []byte) error {
 
 	sText := string(bytes.ToLower(bytes.TrimSpace(text)))
@@ -190,9 +268,8 @@ func (es *ErrorType) UnmarshalText(text []byte) error {
 // ErrorTag identifies the error condition.
 type ErrorTag uint64
 
-// errorTagStringArray contains all error tags,
-// and is used to translate ErrorTag values to
-// and from strings.
+// errorTagStringArray contains all error tags, and is used to translate
+// ErrorTag values to and from strings.
 var errorTagStringArray = [...]string{
 	ErrorTagZero:             "",
 	ErrorTagAccessDenied:     "access-denied",
@@ -218,8 +295,7 @@ var errorTagStringArray = [...]string{
 	ErrorTagUnknownNamespace: "unknown-namespace",
 }
 
-// String returns a string representation of this
-// ErrorTag value.
+// String returns a string representation of this ErrorTag value.
 func (et ErrorTag) String() string {
 	if int(et) < len(errorTagStringArray) {
 		return errorTagStringArray[et]
@@ -258,11 +334,10 @@ func (et ErrorTag) Severity() ErrorSeverity {
 	}
 }
 
-// UnmarshalText sets the ErrorTag receiver to the constant
-// represented by the text argument given. If the text argument
-// does not represent a known ErrorTag, the ErrorTag is set
-// to the ErrorTagUnknown constant, and an UnmarshalTextError
-// is returned.
+// UnmarshalText sets the ErrorTag receiver to the constant represented by the
+// text argument given. If the text argument does not represent a known
+// ErrorTag, the ErrorTag is set to the ErrorTagUnknown constant, and an
+// UnmarshalTextError is returned.
 func (et *ErrorTag) UnmarshalText(text []byte) error {
 
 	sText := string(bytes.ToLower(bytes.TrimSpace(text)))

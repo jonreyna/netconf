@@ -9,7 +9,9 @@ import (
 )
 
 type Client struct {
-	sshClient *ssh.Client
+	sshClient       *ssh.Client
+	keepaliveTicker *time.Ticker
+	stopKeepalive   chan struct{}
 }
 
 func Dial(c *Config) (*Client, error) {
@@ -29,11 +31,13 @@ func Dial(c *Config) (*Client, error) {
 
 	sshConn, chans, reqs, err := ssh.NewClientConn(conn, c.normalizeAddress(), c.SSH)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, err
 	}
 
-	ncClient := Client{ssh.NewClient(sshConn, chans, reqs)}
+	ncClient := Client{
+		sshClient: ssh.NewClient(sshConn, chans, reqs),
+	}
 
 	if c.Keepalive != 0 {
 		ncClient.Keepalive(c.Keepalive)
@@ -43,6 +47,12 @@ func Dial(c *Config) (*Client, error) {
 }
 
 func (c *Client) Close() error {
+
+	if c.keepaliveTicker != nil {
+		close(c.stopKeepalive)
+		c.keepaliveTicker.Stop()
+	}
+
 	return c.sshClient.Close()
 }
 
@@ -57,13 +67,22 @@ func (c *Client) NewSession() (*Session, *HelloMessage, error) {
 }
 
 func (c *Client) Keepalive(interval time.Duration) {
+
+	c.keepaliveTicker = time.NewTicker(interval)
+	c.stopKeepalive = make(chan struct{})
+
 	go func() {
-		t := time.NewTicker(interval)
-		defer t.Stop()
+
 		for {
-			<-t.C
-			_, _, err := c.sshClient.SendRequest("keepalive@github.com/sourcemonk/netconf", true, nil)
-			if err != nil {
+			select {
+			case <-c.keepaliveTicker.C:
+				_, _, err := c.sshClient.SendRequest("keepalive@github.com/sourcemonk/netconf", true, nil)
+				if err != nil {
+					return
+				}
+
+			case <-c.stopKeepalive:
+				c.keepaliveTicker.Stop()
 				return
 			}
 		}
