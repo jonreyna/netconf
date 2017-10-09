@@ -2,6 +2,7 @@ package netconf
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"sort"
@@ -146,6 +147,44 @@ type Reply struct {
 	Data    interface{}  `xml:",any"`
 	Attr    []xml.Attr   `xml:",attr"`
 	Error   []ReplyError `xml:"rpc-error"`
+}
+
+type Replies struct {
+	method  []interface{}
+	i       int
+	session *Session
+	ctx     context.Context
+	err     error
+}
+
+func (r *Replies) Next() bool {
+
+	if r.i != len(r.method) {
+
+		r.err = <-r.session.goEncodeOne(r.ctx, r.method[r.i])
+		r.i++
+
+		if r.err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *Replies) Err() error {
+	return r.err
+}
+
+func (r *Replies) Scan(reply interface{}) error {
+	defer r.session.ResetReader()
+	r.err = <-r.session.goDecodeOne(r.ctx, reply)
+	return r.err
+}
+
+func (r *Replies) Close() error {
+	r.session.ResetReader()
+	return nil
 }
 
 // ReplyError encapsulates a NETCONF RPC error, and implements the error

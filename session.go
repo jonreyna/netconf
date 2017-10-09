@@ -8,6 +8,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// DefaultPort is the socket port used to establish a connection when no port is
+// given.
 const DefaultPort = "830"
 
 // MessageSeparator is a constant defining the standard
@@ -33,15 +35,38 @@ type HelloMessage struct {
 	SessionID    uint     `xml:"session-id,omitempty"`
 }
 
+// Session handles interaction with stdin and stdout pipes of the underlyuing
+// SSH session.
 type Session struct {
 	sshSession  *ssh.Session
 	encoder     *xml.Encoder
 	decoder     *xml.Decoder
 	reader      *Reader
+	client      *Client
 	writeCloser io.WriteCloser
 }
 
-func NewSession(sshSession *ssh.Session) (*Session, *HelloMessage, error) {
+// NewSession builds a new Session to the target specified in the given Config.
+func NewSession(c *Config) (*Session, *HelloMessage, error) {
+
+	clt, err := Dial(c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sess, hello, err := clt.NewSession()
+	if err != nil {
+		clt.Close()
+		return nil, nil, err
+	}
+
+	sess.client = clt
+
+	return sess, hello, nil
+}
+
+// Upgrade converts an ssh.Session to a NETCONF Session.
+func Upgrade(sshSession *ssh.Session) (*Session, *HelloMessage, error) {
 
 	err := sshSession.RequestSubsystem("netconf")
 	if err != nil {
@@ -70,6 +95,7 @@ func NewSession(sshSession *ssh.Session) (*Session, *HelloMessage, error) {
 	return &ncSession, hello, err
 }
 
+// initPipes preps the ssh session's stdin and stdout pipes.
 func (s *Session) initPipes() error {
 
 	readPipe, err := s.sshSession.StdoutPipe()
@@ -87,41 +113,79 @@ func (s *Session) initPipes() error {
 	return nil
 }
 
+// Read implements the standard io.Reader interface. It will return io.EOF once
+// the end of the NETCONF message is found. Use ResetReader to clear the error
+// before reading the next message.
 func (s *Session) Read(p []byte) (n int, err error) {
 	return s.reader.Read(p)
 }
 
+// ResetReader clears the io.Reader's error, and prepares it to read the next
+// message.
 func (s *Session) ResetReader() {
 	s.reader.Reset()
 }
 
+// Write writes directly to the underlying session. It does not write message
+// separators, or preserve any state.
 func (s *Session) Write(p []byte) (n int, err error) {
 	return s.writeCloser.Write(p)
 }
 
+// Close closes the Session, (and the Client if the Session was created with the
+// package level NewSession function).
 func (s *Session) Close() error {
 
-	var err error
+	var (
+		wrtErr  error
+		sessErr error
+		cltErr  error
+	)
 
 	if s.writeCloser != nil {
-		err = s.writeCloser.Close()
+		wrtErr = s.writeCloser.Close()
 	}
 
-	if s.sshSession != nil && err == nil {
-		return s.sshSession.Close()
+	if s.sshSession != nil {
+		sessErr = s.sshSession.Close()
 	}
 
-	_ = s.sshSession.Close()
+	if s.client != nil {
+		cltErr = s.client.Close()
+	}
 
-	return err
+	if wrtErr != nil {
+		return wrtErr
+	}
+
+	if sessErr != nil {
+		return sessErr
+	}
+
+	if cltErr != nil {
+		return cltErr
+	}
+
+	return nil
 }
 
+// DecodeHello reads and returns the hello message sent from the NETCONF server.
 func (s *Session) DecodeHello() (*HelloMessage, error) {
 	defer s.reader.Reset()
 	var hello HelloMessage
 	return &hello, s.decoder.Decode(&hello)
 }
 
+// Exec sequentially executes the given NETCONF methods on the Session.
+func (s *Session) Exec(ctx context.Context, method ...interface{}) *Replies {
+	return &Replies{
+		method:  method,
+		ctx:     ctx,
+		session: s,
+	}
+}
+
+// ExecOne executes one method on the session, and reads the results into the given reply.
 func (s *Session) ExecOne(ctx context.Context, method, reply interface{}) <-chan error {
 	return s.goEncodDecodeOne(ctx, method, reply)
 }
@@ -146,7 +210,7 @@ func (s *Session) goEncodDecodeOne(ctx context.Context, method, reply interface{
 		}
 
 		select {
-		case err := <-s.goDecodeOne(ctx, method):
+		case err := <-s.goDecodeOne(ctx, reply):
 			if err != nil {
 				errChan <- err
 			}
@@ -165,6 +229,7 @@ func (s *Session) goDecodeOne(ctx context.Context, reply interface{}) <-chan err
 	go func() {
 
 		defer close(errChan)
+		defer s.ResetReader()
 
 		r, ok := reply.(*Reply)
 		if !ok {
@@ -236,6 +301,7 @@ func (s *Session) goEncodeOne(ctx context.Context, method interface{}) <-chan er
 	return errChan
 }
 
+// WriteSep writes a NETCONF message separator and newline to the Session.
 func (s *Session) WriteSep() (n int, err error) {
 	const sepWithNewLine = `]]>]]>
 `
